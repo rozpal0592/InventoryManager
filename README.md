@@ -37,7 +37,7 @@ This project demonstrates **Object-Oriented Programming (OOP)** concepts, includ
 | SQLite CRUD                       | Planned for Week 4                                                             |
 
 ## 🖼 UML Class Diagram
-*(See Week 3 Word document for embedded diagram.)*
+See UML class diagram.
 
 ## 🚀 Build & Run
 From the project root:
