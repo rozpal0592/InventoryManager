@@ -1,37 +1,37 @@
+// Rozz Pallera
+// Date: 28 Sept 25
+// SDC320 Project
+// Description: Defines the InventoryItem class which extends InventoryBase 
+// and implements methods for calculating reorder priority and generating reports.
+
 using System;
 
-namespace IMS
+public class MedicalSupply : InventoryItem
 {
-    public class MedicalSupply : InventoryItem
+    public bool   RequiresColdChain { get; protected set; }
+    public string LotNumber         { get; protected set; }
+
+    public MedicalSupply(string name, int qty, int rop, DateTime? exp, Supplier supplier, string unit,
+                         bool requiresColdChain, string lot)
+        : base(name, qty, rop, exp, supplier, unit)
     {
-        public bool RequiresColdChain { get; set; }
-        public string LotNumber { get; set; }
+        RequiresColdChain = requiresColdChain;
+        LotNumber = lot ?? string.Empty;
+        Category = "Medical";
+    }
 
-        public MedicalSupply(string name, int quantity, int reorderPoint, DateTime? expiration, Supplier supplier,
-                             string unit = "unit", bool requiresColdChain = false, string lotNumber = "")
-            : base(name, quantity, reorderPoint, expiration, supplier, unit)
+    public override int CalculateReorderPriority()
+    {
+        int score = base.CalculateReorderPriority();
+        if (RequiresColdChain)
         {
-            Category = "Medical";
-            RequiresColdChain = requiresColdChain;
-            LotNumber = lotNumber ?? string.Empty;
+            score += 1;
         }
-
-        public override int CalculateReorderPriority()
-        {
-            int baseScore = base.CalculateReorderPriority();
-            if (IsExpiringSoon(TimeSpan.FromDays(30))) baseScore += 2;
-            if (RequiresColdChain) baseScore += 1;
-            return baseScore;
-        }
-
-        public override string GenerateReport()
-            => base.GenerateReport()
-               + $"\nLot Number: {(string.IsNullOrWhiteSpace(LotNumber) ? "N/A" : LotNumber)}"
-               + $"\nCold Chain: {(RequiresColdChain ? "YES" : "no")}";
-
-        public override string ToString()
-            => base.ToString()
-               + $" | Lot: {(string.IsNullOrWhiteSpace(LotNumber) ? "-" : LotNumber)}"
-               + $" | ColdChain: {(RequiresColdChain ? "Y" : "N")}";
+        return score;
+    }
+    public override string GenerateReport()
+    {
+        string cold = RequiresColdChain ? "Y" : "N";
+        return $"{Name} ({Category}) Qty:{Quantity} ROP:{ReorderPoint} Lot:{LotNumber} ColdChain:{(cold)}";
     }
 }

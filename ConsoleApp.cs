@@ -1,192 +1,221 @@
+// Rozz Pallera
+// Date: 28 Sept 25
+// SDC320 Project
+
 using System;
 using System.Collections.Generic;
-using System.Globalization;
+using System.Data.SQLite;
 
-namespace IMS
+public class ConsoleApp
 {
-    public static class ConsoleApp
+    private readonly SQLiteConnection _conn;
+
+    public ConsoleApp(SQLiteConnection conn) => _conn = conn;
+
+    public void Run()
     {
-        private static readonly List<InventoryBase> _items = new();
-        private static int _nextId = 1;
-
-        public static void Run()
+        bool running = true;
+        while (running)
         {
-            SeedSampleData();
-            while (true)
-            {
-                Console.WriteLine();
-                Console.WriteLine("==== Inventory Management (Week 3 Demo – No DB) ====");
-                Console.WriteLine("1) List Items");
-                Console.WriteLine("2) Add Generic Item");
-                Console.WriteLine("3) Add Medical Supply");
-                Console.WriteLine("4) Add Office Supply");
-                Console.WriteLine("5) Reports: Low Stock");
-                Console.WriteLine("6) Reports: Expiring Soon (30d)");
-                Console.WriteLine("0) Exit");
-                Console.Write("Select: ");
-                var input = Console.ReadLine();
-                Console.WriteLine();
+            Console.WriteLine("\n==== Inventory Management (Week 4 – SQLite) ====");
+            Console.WriteLine("1) List Suppliers");
+            Console.WriteLine("2) Add Supplier");
+            Console.WriteLine("3) List Items");
+            Console.WriteLine("4) Add Generic Item");
+            Console.WriteLine("5) Add Medical Supply");
+            Console.WriteLine("6) Add Office Supply");
+            Console.WriteLine("7) Update Item Quantity");
+            Console.WriteLine("8) Delete Item");
+            Console.WriteLine("0) Exit");
+            string choice = Input("Select: ");
 
-                switch (input)
-                {
-                    case "1": ListItems(); break;
-                    case "2": AddGenericInteractive(); break;
-                    case "3": AddMedicalInteractive(); break;
-                    case "4": AddOfficeInteractive(); break;
-                    case "5": ReportLowStock(); break;
-                    case "6": ReportExpiringSoon(); break;
-                    case "0": return;
-                    default: Console.WriteLine("Invalid choice. Try again."); break;
-                }
+            switch (choice)
+            {
+                case "1": ListSuppliers(); break;
+                case "2": AddSupplier(); break;
+                case "3": ListItems(); break;
+                case "4": AddGenericItem(); break;
+                case "5": AddMedicalSupply(); break;
+                case "6": AddOfficeSupply(); break;
+                case "7": UpdateItemQuantity(); break;
+                case "8": DeleteItem(); break;
+                case "0": running = false; break;
+                default:  Console.WriteLine("Invalid choice."); break;
             }
         }
+    }
 
-        private static void SeedSampleData()
+    // ---------- Suppliers ----------
+    private void ListSuppliers()
+    {
+        var list = SupplierDb.GetAll(_conn);
+        if (list.Count == 0) { Console.WriteLine("No suppliers."); return; }
+
+        Console.WriteLine(new string('-', 90));
+        Console.WriteLine($"{"ID",-4} {"Supplier",-30} {"Phone",-20} {"Email",-30}");
+        Console.WriteLine(new string('-', 90));
+
+        foreach (var s in list)
+            Console.WriteLine($"{s.SupplierId,-4} {s.SupplierName,-30} {s.Phone,-20} {s.Email,-30}");
+
+        Console.WriteLine(new string('-', 90));
+    }
+
+    private void AddSupplier()
+    {
+        string name  = Input("Supplier name: ", required: true);
+        string phone = Input("Phone: ");
+        string email = Input("Email: ");
+        var s = new Supplier(name, phone, email);
+        SupplierDb.Add(_conn, s);
+        Console.WriteLine($"Added supplier #{s.SupplierId}: {s.SupplierName}");
+    }
+
+    private Supplier? ChooseSupplier()
+    {
+        var list = SupplierDb.GetAll(_conn);
+        if (list.Count == 0) return null;
+
+        Console.WriteLine("Suppliers:");
+        foreach (var s in list) Console.WriteLine($"{s.SupplierId,3} | {s.SupplierName}");
+        int id = InputInt("SupplierId: ");
+
+        foreach (var s in list)
+            if (s.SupplierId == id) return s;
+
+        Console.WriteLine("Not found; using first supplier.");
+        return list[0];
+    }
+
+    // ---------- Items ----------
+    private void ListItems()
+    {
+        var suppliers = SupplierDb.GetAll(_conn);
+        var items = ItemDb.GetAll(_conn, suppliers);
+        if (items.Count == 0) { Console.WriteLine("No items."); return; }
+
+        Console.WriteLine(new string('-', 110));
+        Console.WriteLine(
+            $"{"ID",-3} {"Category",-10} {"Name",-25} {"Qty",-5} {"ROP",-5} {"Exp",-12} {"Supplier",-18} {"Unit",-10} {"Extra",-25}");
+        Console.WriteLine(new string('-', 110));
+
+        foreach (var it in items)
         {
-            if (_items.Count > 0) return;
-            var supA = new Supplier("Prime Med Supply", "757-555-1100", "sales@primemed.com");
-            var supB = new Supplier("OfficeHub", "757-555-2200", "hello@officehub.com");
+            string exp      = it.ExpirationDate?.ToString("yyyy-MM-dd") ?? "N/A";
+            string supplier = it.Supplier?.SupplierName ?? "N/A";
+            string unit     = (it as InventoryItem)?.Unit ?? "";
+            string extra    = "";
 
-            var med = new MedicalSupply(
-                name: "Sterile Gloves (M)",
-                quantity: 45,
-                reorderPoint: 50,
-                expiration: DateTime.Today.AddDays(25),
-                supplier: supA,
-                unit: "box",
-                requiresColdChain: false,
-                lotNumber: "LOT-GLV-0925");
-            AssignId(med);
+            if (it is MedicalSupply med)
+                extra = $"Lot: {med.LotNumber}  ColdChain: {(med.RequiresColdChain ? "Y" : "N")}";
+            else if (it is OfficeSupply off)
+                extra = $"Model: {off.Model}";
+            else if (!string.IsNullOrWhiteSpace(unit))
+                extra = $"Unit: {unit}";
 
-            var off = new OfficeSupply(
-                name: "Printer Paper 8.5x11",
-                quantity: 8,
-                reorderPoint: 10,
-                supplier: supB,
-                unit: "ream",
-                model: "HP A4 Classic");
-            AssignId(off);
-
-            var gen = new InventoryItem(
-                name: "Sanitizing Wipes",
-                quantity: 12,
-                reorderPoint: 10,
-                expiration: DateTime.Today.AddDays(120),
-                supplier: supA,
-                unit: "canister");
-            AssignId(gen);
+            Console.WriteLine(
+                $"{it.ItemId,-3} {it.Category,-10} {it.Name,-25} {it.Quantity,-5} {it.ReorderPoint,-5} {exp,-12} {supplier,-18} {unit,-10} {extra,-25}");
         }
 
-        private static void AssignId(InventoryBase item)
+        Console.WriteLine(new string('-', 110));
+    }
+
+    private void AddGenericItem()
+    {
+        var sup = ChooseSupplier();
+        if (sup == null) { Console.WriteLine("Add a supplier first."); return; }
+
+        string name   = Input("Item name: ", required: true);
+        int qty       = InputInt("Quantity: ");
+        int rop       = InputInt("Reorder Point: ");
+        DateTime? exp = InputDateNullable("Expiration (YYYY-MM-DD or blank): ");
+        string unit   = Input("Unit (e.g., each, box): ");
+
+        var item = new InventoryItem(name, qty, rop, exp, sup, unit);
+        ItemDb.Add(_conn, item);
+        Console.WriteLine("Added: " + item);
+    }
+
+    private void AddMedicalSupply()
+    {
+        var sup = ChooseSupplier();
+        if (sup == null) { Console.WriteLine("Add a supplier first."); return; }
+
+        string name   = Input("Supply name: ", required: true);
+        int qty       = InputInt("Quantity: ");
+        int rop       = InputInt("Reorder Point: ");
+        DateTime? exp = InputDateNullable("Expiration (YYYY-MM-DD or blank): ");
+        string unit   = Input("Unit (e.g., box): ");
+        bool cold     = Input("Requires cold chain? (y/n): ").Trim().ToLowerInvariant() == "y";
+        string lot    = Input("Lot number (optional): ");
+
+        var item = new MedicalSupply(name, qty, rop, exp, sup, unit, cold, lot);
+        ItemDb.Add(_conn, item);
+        Console.WriteLine("Added: " + item);
+    }
+
+    private void AddOfficeSupply()
+    {
+        var sup = ChooseSupplier();
+        if (sup == null) { Console.WriteLine("Add a supplier first."); return; }
+
+        string name   = Input("Supply name: ", required: true);
+        int qty       = InputInt("Quantity: ");
+        int rop       = InputInt("Reorder Point: ");
+        string unit   = Input("Unit (e.g., pack/ream): ");
+        string model  = Input("Model (optional): ");
+
+        var item = new OfficeSupply(name, qty, rop, null, sup, unit, model);
+        ItemDb.Add(_conn, item);
+        Console.WriteLine("Added: " + item);
+    }
+
+    private void UpdateItemQuantity()
+    {
+        int id  = InputInt("ItemId to update: ");
+        int qty = InputInt("New quantity: ");
+        ItemDb.UpdateQuantity(_conn, id, qty);
+        Console.WriteLine("Quantity updated.");
+    }
+
+    private void DeleteItem()
+    {
+        int id = InputInt("ItemId to delete: ");
+        ItemDb.Delete(_conn, id);
+        Console.WriteLine("Deleted (if existed).");
+    }
+
+    // ---------- Input helpers ----------
+    private static string Input(string prompt, bool required = false)
+    {
+        while (true)
         {
-            // simple ID assigner for demo
-            item.GetType().GetProperty(nameof(InventoryBase.ItemId))?.SetValue(item, _nextId++);
-            _items.Add(item);
+            Console.Write(prompt);
+            string? s = Console.ReadLine();
+            if (!required) return s ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(s)) return s!;
+            Console.WriteLine("This field is required.");
         }
+    }
 
-        private static void ListItems()
+    private static int InputInt(string prompt)
+    {
+        while (true)
         {
-            if (_items.Count == 0)
-            {
-                Console.WriteLine("No items available.");
-                return;
-            }
-
-            Console.WriteLine("#   | Category | Name                     | Qty  | ROP | Exp        | Extra");
-            Console.WriteLine(new string('-', 80));
-            foreach (var it in _items) Console.WriteLine(it.ToString());
+            Console.Write(prompt);
+            string? s = Console.ReadLine();
+            if (int.TryParse(s, out int v) && v >= 0) return v;
+            Console.WriteLine("Enter a non-negative integer.");
         }
+    }
 
-        private static void AddGenericInteractive()
-        {
-            var name = Prompt("Name: ");
-            int qty = PromptInt("Quantity: ");
-            int rop = PromptInt("Reorder Point: ");
-            DateTime? exp = PromptDateNullable("Expiration (YYYY-MM-DD or blank): ");
-            var unit = Prompt("Unit (e.g., box, bottle): ");
-            var sup = PromptSupplier();
-
-            var item = new InventoryItem(name, qty, rop, exp, sup, unit);
-            AssignId(item);
-            Console.WriteLine("Added.");
-        }
-
-        private static void AddMedicalInteractive()
-        {
-            var name = Prompt("Name: ");
-            int qty = PromptInt("Quantity: ");
-            int rop = PromptInt("Reorder Point: ");
-            DateTime? exp = PromptDateNullable("Expiration (YYYY-MM-DD or blank): ");
-            var unit = Prompt("Unit (e.g., box, bottle): ");
-            var cc = Prompt("Requires Cold Chain? (y/n): ").Trim().ToLowerInvariant() == "y";
-            var lot = Prompt("Lot Number (optional): ");
-            var sup = PromptSupplier();
-
-            var item = new MedicalSupply(name, qty, rop, exp, sup, unit, cc, lot);
-            AssignId(item);
-            Console.WriteLine("Added.");
-        }
-
-        private static void AddOfficeInteractive()
-        {
-            var name = Prompt("Name: ");
-            int qty = PromptInt("Quantity: ");
-            int rop = PromptInt("Reorder Point: ");
-            var unit = Prompt("Unit (e.g., pack, ream): ");
-            var model = Prompt("Model (optional): ");
-            var sup = PromptSupplier();
-
-            var item = new OfficeSupply(name, qty, rop, sup, unit, model);
-            AssignId(item);
-            Console.WriteLine("Added.");
-        }
-
-        private static void ReportLowStock()
-        {
-            Console.WriteLine("-- Low Stock --");
-            foreach (var it in _items)
-                if (it.IsLowStock())
-                    Console.WriteLine($"[LOW] {it.Name} | Qty={it.Quantity} | ROP={it.ReorderPoint} | Priority={it.CalculateReorderPriority()}");
-        }
-
-        private static void ReportExpiringSoon()
-        {
-            Console.WriteLine("-- Expiring within 30 days --");
-            foreach (var it in _items)
-                if (it.IsExpiringSoon(TimeSpan.FromDays(30)))
-                    Console.WriteLine($"[EXP] {it.Name} | Exp={it.ExpirationDate:yyyy-MM-dd} | Priority={it.CalculateReorderPriority()}");
-        }
-
-        // Helpers
-        private static string Prompt(string label) { Console.Write(label); return Console.ReadLine() ?? string.Empty; }
-
-        private static int PromptInt(string label)
-        {
-            while (true)
-            {
-                Console.Write(label);
-                if (int.TryParse(Console.ReadLine(), out int value) && value >= 0) return value;
-                Console.WriteLine("Please enter a non-negative integer.");
-            }
-        }
-
-        private static DateTime? PromptDateNullable(string label)
-        {
-            Console.Write(label);
-            var s = Console.ReadLine();
-            if (string.IsNullOrWhiteSpace(s)) return null;
-            if (DateTime.TryParseExact(s!.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture,
-                System.Globalization.DateTimeStyles.None, out var dt)) return dt;
-            Console.WriteLine("Invalid date; leaving blank.");
-            return null;
-        }
-
-        private static Supplier PromptSupplier()
-        {
-            var name = Prompt("Supplier Name: ");
-            var phone = Prompt("Phone (optional): ");
-            var email = Prompt("Email (optional): ");
-            return new Supplier(name, phone, email);
-        }
+    private static DateTime? InputDateNullable(string prompt)
+    {
+        Console.Write(prompt);
+        string? s = Console.ReadLine();
+        if (string.IsNullOrWhiteSpace(s)) return null;
+        if (DateTime.TryParse(s, out var dt)) return dt;
+        Console.WriteLine("Invalid date; leaving blank.");
+        return null;
     }
 }

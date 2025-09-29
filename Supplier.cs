@@ -1,31 +1,25 @@
-using System.Collections.Generic;
+// Rozz Pallera
+// Date: 28 Sept 25
+// SDC320 Project
+// Description: Defines the InventoryItem class which extends InventoryBase 
+// and implements methods for calculating reorder priority and generating reports.
 
-namespace IMS
+public class Supplier
 {
-    /// <summary>Supplier entity (used via aggregation/association by items).</summary>
-    public class Supplier
+    public int SupplierId { get; set; }
+    public string SupplierName { get; set; }
+    public string Phone { get; set; }
+    public string Email { get; set; }
+
+    public Supplier(string supplierName, string phone, string email)
     {
-        public int SupplierId { get; set; }
-        public string SupplierName { get; set; } = string.Empty;
-        public string Phone { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
+        SupplierName = supplierName ?? string.Empty;
+        Phone = phone ?? string.Empty;
+        Email = email ?? string.Empty;
+    }
 
-        public Supplier() { }
-
-        public Supplier(string supplierName, string phone = "", string email = "")
-        {
-            SupplierName = supplierName ?? string.Empty;
-            Phone = phone ?? string.Empty;
-            Email = email ?? string.Empty;
-        }
-
-        public override string ToString()
-        {
-            var parts = new List<string>();
-            if (!string.IsNullOrWhiteSpace(SupplierName)) parts.Add(SupplierName);
-            if (!string.IsNullOrWhiteSpace(Phone)) parts.Add($"📞 {Phone}");
-            if (!string.IsNullOrWhiteSpace(Email)) parts.Add($"✉️ {Email}");
-            return string.Join(" | ", parts);
-        }
+    public override string ToString()
+    {
+        return $"[{SupplierId}] {SupplierName} | Phone: {Phone}, Email: {Email}";
     }
 }
