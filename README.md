@@ -1,12 +1,12 @@
 # Inventory Manager – Console-Based Supply Tracking
 
-## 📘 Project Summary
+## Project Summary
 The **Inventory Manager** is a C# console application for managing suppliers and inventory items with full CRUD support and SQLite persistence.  
 It demonstrates core Object-Oriented Programming (OOP) principles including **interfaces, abstract classes, inheritance, composition, polymorphism, constructors, and access specifiers**.  
 
 This project was developed as part of a capstone-style course project and is portfolio-ready for showcasing C# development, database integration, and software engineering practices.
 
-## 🚀 Features
+## Features
 - **Suppliers**
   - Add new suppliers
   - List suppliers in a formatted table
