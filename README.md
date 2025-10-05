@@ -1,52 +1,59 @@
-# Inventory Management System (IMS)
+# Inventory Manager – Console-Based Supply Tracking
 
-## 📌 Project Overview
-The Inventory Management System (IMS) is a C# console application designed to track and manage supply records. Users can add, view, update, and delete inventory items with key details such as name, quantity, expiration date, and supplier information.  
-This project demonstrates **Object-Oriented Programming (OOP)** concepts, including interfaces, abstract classes, inheritance, composition, and polymorphism, while preparing for **SQLite database integration** (Week 4).
+## 📘 Project Summary
+The **Inventory Manager** is a C# console application for managing suppliers and inventory items with full CRUD support and SQLite persistence.  
+It demonstrates core Object-Oriented Programming (OOP) principles including **interfaces, abstract classes, inheritance, composition, polymorphism, constructors, and access specifiers**.  
 
-## 🛠 Features (Week 3 – Class Implementation)
-- **Terminal I/O:** Menu-driven console interface for managing items.  
-- **Item Types:**  
-  - `InventoryItem` (generic item)  
-  - `MedicalSupply` (cold-chain, lot tracking, expiry priority)  
-  - `OfficeSupply` (office/admin supplies, stock-only priority)  
-- **Supplier Management:** Each item is associated with a supplier (aggregation).  
-- **Reports:**  
-  - Low stock items (ROP threshold)  
-  - Expiring soon (≤30 days)  
-- **Polymorphism:** Item types override `CalculateReorderPriority`, `GenerateReport`, and `ToString`.
+This project was developed as part of a capstone-style course project and is portfolio-ready for showcasing C# development, database integration, and software engineering practices.
 
-## 📂 Class Structure
-- **IReportable** – Interface for generating reports.  
-- **InventoryBase (abstract)** – Shared state & behavior for items.  
-- **InventoryItem** – Concrete base item type.  
-- **MedicalSupply** – Extends `InventoryItem`, adds cold-chain and lot tracking.  
-- **OfficeSupply** – Extends `InventoryItem`, adds model info.  
-- **Supplier** – Entity used via aggregation.  
-- **ConsoleApp** – Handles menu UI and item management.  
+## 🚀 Features
+- **Suppliers**
+  - Add new suppliers
+  - List suppliers in a formatted table
 
-## 📊 Requirements Mapping
-| Requirement                       | Implementation                                                                 |
-|-----------------------------------|--------------------------------------------------------------------------------|
-| Terminal I/O                      | ConsoleApp (menu, prompts, reports)                                            |
-| Interface                         | IReportable                                                                    |
-| Abstract Class                    | InventoryBase                                                                  |
-| Composition/Aggregation           | InventoryItem ◊– Supplier                                                      |
-| Polymorphism                      | Overrides in MedicalSupply / OfficeSupply                                      |
-| Constructors & Access Specifiers  | All classes use parameterized constructors; `protected set` for IDs/timestamps |
-| SQLite CRUD                       | Planned for Week 4                                                             |
+- **Items**
+  - Add Generic, Medical, or Office items
+  - List items with tabular formatting
+  - Update item quantities
+  - Delete items by ID
 
-## 🖼 UML Class Diagram
+- **Database**
+  - SQLite backend for persistent storage
+  - Auto-seeding ensures default suppliers and demo items exist
+  - Enforces foreign key relationships between suppliers and items
+
+- **OOP Concepts**
+  - `IReportable` interface
+  - `InventoryBase` abstract class
+  - `InventoryItem`, `MedicalSupply`, `OfficeSupply` classes demonstrating inheritance & polymorphism
+  - Composition: each `InventoryItem` has a `Supplier`
+  - Proper constructors and access specifiers
+
+## How to Run
+1. Clone the repository:
+     git clone https://github.com/rozpal0592/InventoryManager.git
+     cd InventoryManager
+2. Build & Run
+    From the project root:
+      dotnet new colsole
+      dotnet run
+
+## Requirements Mapping
+| Requirement       | Design Element               | Implementation                                 |
+|-------------------|------------------------------|------------------------------------------------|
+| Interface         | IReportable                  | Implemented in InventoryBase & subclasses      |
+| Abstract Class    | InventoryBase                | Defines shared logic and abstract methods      |
+| Composition       | Items reference Supplier     | InventoryItem contains a Supplier object       |
+| Polymorphism      | Specialized item classes     | MedicalSupply, OfficeSupply overrides methods  |
+| Constructors      | All classes use constructors | Example: MedicalSupply(...), Supplier(...)     |
+| Access Specifiers | Public get, protected set    | Enforces encapsulation across properties       |
+| CRUD Opertaions   | SupplierDB, ItemDB           | Full Create, Read, Update, Delete in SQLite    |
+| Terminal I/O      | ConsoleApp class             | Menu-driven console UI with formatted reports  |
+
+##  UML Class Diagram
 See UML class diagram.
 
-## 🚀 Build & Run
-From the project root:
-  dotnet new colsole
-  dotnet run
+## Demo Video
 
-## 📌 Project Phases
-- **Week 1 – Proposal:** Defined project scope & purpose.  
-- **Week 2 – Design:** Created class definitions & database schema.  
-- **Week 3 – Implementation:** Developed classes and console framework (no DB).  
-- **Week 4 – Database Integration:** Add SQLite CRUD operations.  
-- **Week 5 – Final Submission:** Documentation, GitHub polish, demo video.
+
+
