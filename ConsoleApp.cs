@@ -17,7 +17,7 @@ public class ConsoleApp
         bool running = true;
         while (running)
         {
-            Console.WriteLine("\n==== Inventory Management (Week 4 – SQLite) ====");
+            Console.WriteLine("\n==== Inventory Management ====");
             Console.WriteLine("1) List Suppliers");
             Console.WriteLine("2) Add Supplier");
             Console.WriteLine("3) List Items");
